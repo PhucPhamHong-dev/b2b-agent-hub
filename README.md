@@ -1,4 +1,4 @@
-# Autoss Tech Sales Agent (Tokinarc) – Demo
+# Sales Agent (Tokinarc) – Demo
 
 Hệ thống demo Sales Assistant B2B cho phụ kiện MIG/MAG Tokinarc, chạy FastAPI + Gemini API + pipeline theo ADK, có UI đơn giản và thinking logs hiển thị.
 
