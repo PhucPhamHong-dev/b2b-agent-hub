@@ -1,0 +1,9 @@
+{
+  "intents": [
+    "ASK_SELLING_SCOPE",
+    "PRODUCT_",
+    "PRODUCT_CATEGORY_INQUIRY",
+    "PRODUCT_IN",
+    "PRODUCT_INQUIRY"
+  ]
+}

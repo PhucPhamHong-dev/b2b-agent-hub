@@ -1,0 +1,36 @@
+﻿<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Autoss B2B Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-title">AUTOSS</div>
+          <div class="brand-subtitle">B2B Sales Agent</div>
+        </div>
+        <button class="new-chat" id="new-chat">New Chat</button>
+        <div class="session-list" id="session-list"></div>
+      </aside>
+      <main class="main">
+        <div class="header">
+          <div>
+            <div class="header-title">AUTOSS B2B Assistant</div>
+            <div class="header-subtitle">Agent reasoning is visible for every response.</div>
+          </div>
+          <div class="status-pill"><span class="status-dot"></span>Agent Online</div>
+        </div>
+        <div class="chat-window" id="chat-window"></div>
+        <div class="composer">
+          <textarea id="message-input" placeholder="Nhập câu hỏi..."></textarea>
+          <button class="send-btn" id="send-btn">Gửi</button>
+        </div>
+      </main>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

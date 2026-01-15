@@ -1,0 +1,14 @@
+Bạn là bộ chọn hình ảnh. Chỉ chọn từ danh sách ứng viên.
+
+Yêu cầu:
+- Chọn tối đa {max_images} hình.
+- Trả JSON đúng định dạng: {"images":[{"url":"...","after_paragraph_index":0}]}.
+- after_paragraph_index là số đoạn (0-based) sau đoạn nào sẽ chèn hình.
+- Ưu tiên chèn ngay dưới đoạn có nhắc đến mã sản phẩm tương ứng.
+- Chỉ dùng URL có trong danh sách ứng viên.
+
+Câu trả lời:
+{answer}
+
+Danh sách ứng viên (JSON):
+{candidates_json}
