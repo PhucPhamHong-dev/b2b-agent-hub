@@ -1786,6 +1786,11 @@ class SalesAssistantAgent:
             else:
                 answer = remove_form_block(answer)
                 answer = remove_contact_reminder(answer)
+            answer = insert_stock_line(
+                answer,
+                qstate.get("stock_line", ""),
+                qstate.get("form_block", FORM_BLOCK),
+            )
             context.answer_text = answer
             logger.info("session=%s step=generation route=quantity_followup_llm", context.session_id)
             return
@@ -4464,6 +4469,65 @@ def find_item_by_selected_sku(items: List[ResourceItem], selected_sku: str) -> O
     return None
 
 
+def extract_stock_quantity(item: Optional[ResourceItem]) -> Optional[int]:
+    """Purpose: Parse a numeric stock value from the catalog row if present.
+    Inputs/Outputs: Inputs: item (ResourceItem|None). Outputs: int or None.
+    Side Effects / State: None.
+    Dependencies: get_raw_value, re.
+    Failure Modes: Returns None when the field is missing or not numeric.
+    If Removed: Quantity follow-ups cannot add stock-status messaging.
+    Testing Notes: A value like "120" or "120 cái" should parse to 120.
+    """
+    if not item or not item.raw:
+        return None
+    value = get_raw_value(item.raw, ["Đơn vị", "Don vi"])
+    if value is None:
+        return None
+    match = re.search(r"\d+", str(value))
+    if not match:
+        return None
+    try:
+        return int(match.group(0))
+    except ValueError:
+        return None
+
+
+def build_stock_status_line(stock_qty: Optional[int]) -> str:
+    """Purpose: Build a stock-availability line using the configured thresholds.
+    Inputs/Outputs: Inputs: stock_qty (int|None). Outputs: str (may be empty).
+    Side Effects / State: None.
+    Dependencies: None.
+    Failure Modes: Returns empty string when stock is missing or invalid.
+    If Removed: Responses will not include the requested stock status line.
+    Testing Notes: 120 -> "có sẵn"; 80 -> "còn 80 cái"; None -> "".
+    """
+    if stock_qty is None:
+        return ""
+    if stock_qty >= 100:
+        return "Hiện hàng đang có sẵn ạ."
+    if stock_qty > 0:
+        return f"Hiện kho còn {stock_qty} cái, số lượng còn lại sẽ cập nhật trong báo giá ạ."
+    return ""
+
+
+def insert_stock_line(answer: str, stock_line: str, form_block: str) -> str:
+    """Purpose: Insert a stock line before the contact form if available.
+    Inputs/Outputs: Inputs: answer (str), stock_line (str), form_block (str). Outputs: str.
+    Side Effects / State: None.
+    Dependencies: normalize_text.
+    Failure Modes: Returns the original answer if inputs are empty.
+    If Removed: Stock messaging may appear in the wrong position or be missing.
+    Testing Notes: Stock line should appear before the form block when present.
+    """
+    if not answer or not stock_line:
+        return answer
+    if normalize_text(stock_line) in normalize_text(answer):
+        return answer.strip()
+    if form_block and form_block in answer:
+        return answer.replace(form_block, f"{stock_line}\n\n{form_block}", 1).strip()
+    return f"{answer.strip()}\n\n{stock_line}".strip()
+
+
 def build_quantity_context_json(context: PipelineContext) -> Dict[str, object]:
     """Purpose: Build context JSON for quantity follow-up prompt.
     Inputs/Outputs: Inputs: context (PipelineContext). Outputs: dict payload.
@@ -4478,6 +4542,8 @@ def build_quantity_context_json(context: PipelineContext) -> Dict[str, object]:
     quantity = context.order_state.get("quantity")
     item = find_item_by_selected_sku(context.catalog_items, selected)
     anchor: Dict[str, object] = {}
+    stock_qty = extract_stock_quantity(item)
+    stock_line = build_stock_status_line(stock_qty)
     if item:
         combined = f"{item.name} {item.description}"
         anchor = {
@@ -4493,6 +4559,8 @@ def build_quantity_context_json(context: PipelineContext) -> Dict[str, object]:
         "quantity": quantity,
         "selected_sku": selected,
         "anchor": anchor,
+        "stock_qty": stock_qty,
+        "stock_line": stock_line,
         "should_show_form": context.should_show_form,
         "missing_contact": not bool(context.order_state.get("contact")),
         "form_block": FORM_BLOCK,
