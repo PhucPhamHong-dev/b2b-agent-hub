@@ -1,0 +1,41 @@
+# Knowledge Delta
+
+## CHANGELOG (APPEND ONLY)
+- [2026-01-16][SYN][medium] Tokinarc và Tokin là các tên gọi chỉ cùng một thương hiệu thiết bị hàn.
+- [2026-01-16][SYN][medium] "béc hàn" đồng nghĩa "béc tiếp xúc" / "contact tip".
+- [2026-01-16][QA][high] Béc hàn Tokin 002005 có thông số 0.8 x 45L, xuất xứ Tokinarc Nhật Bản.
+- [2026-01-16][QA][high] Béc hàn Tokin 002016 có thông số 0.6 x 45L, xuất xứ Tokinarc Nhật Bản.
+- [2026-01-16][RULE][high] Khi tư vấn phụ kiện robot MIG, phải hỏi hệ N/D và dòng Ampe (350A/500A) trước khi liệt kê mã đi kèm.
+- [2026-01-16][QA][high] Béc hàn Tokinarc 0.6 x 45L có mã sản phẩm là 002016, xuất xứ Nhật Bản.
+- [2026-01-16][SYN][high] béc hàn ↔ đầu béc
+- [2026-01-16][TEMPLATE][high] Dạ vâng ạ, em xin gửi Anh/Chị danh sách các loại béc hàn Tokinarc thông dụng bên em đang phân phối ạ.
+- [2026-01-16][QA][high] Cần cung cấp mã Tokin hoặc quy cách cụ thể để xác định chính xác phiên bản Robot cho mã Tokin 002016.
+- [2026-01-16][RULE][high] Khi khách hàng hỏi về dòng Robot, nhân viên cần yêu cầu mã Tokin hoặc quy cách để đối chiếu sản phẩm chính xác.
+- [2026-01-16][SYN][medium] Robot tương đương tự động.
+- [2026-01-16][QA][high] Sản phẩm Tokin 002016 có xuất xứ từ thương hiệu Tokinarc tại Nhật Bản.
+- [2026-01-16][QA][high] Mã Tokin 002016 có thể sử dụng cho súng hàn tay thông dụng hoặc súng hàn robot.
+- [2026-01-16][SYN][high] linh kiện ↔ phụ kiện
+- [2026-01-16][TEMPLATE][high] Anh/Chị có muốn em liệt kê thêm các linh kiện đi kèm cùng hệ để lắp ráp đồng bộ không ạ?
+- [2026-01-16][QA][high] Phụ kiện robot Tokinarc có xuất xứ từ Nhật Bản.
+- [2026-01-16][SYN][high] phụ kiện ↔ linh kiện
+- [2026-01-16][RULE][high] Cần xác nhận loại súng hàn khi khách hỏi về phụ kiện robot để đối chiếu mã linh kiện chính xác.
+- [2026-01-16][TEMPLATE][high] Anh/Chị muốn em liệt kê thêm linh kiện đi kèm cùng hệ để mình ráp đồng bộ không ạ?
+- [2026-01-16][QA][high] Phụ kiện robot Tokinarc từ Nhật Bản bao gồm béc hàn, chụp khí, thân giữ béc và sứ cách điện.
+- [2026-01-16][SYN][high] béc hàn ↔ béc tiếp xúc
+- [2026-01-16][RULE][high] Khi tư vấn phụ kiện robot Tokinarc, cần đề cập đến xuất xứ và các linh kiện tiêu hao chính để đảm bảo tính đồng bộ của hệ thống.
+- [2026-01-16][QA][high] Sứ cách điện Tokinarc được phân loại khác nhau giữa súng hàn tay MIG và súng hàn Robot.
+- [2026-01-16][RULE][high] Luôn xác định dòng hàn và hệ súng (N hoặc D) khi tư vấn sứ cách điện Tokinarc.
+- [2026-01-16][SYN][medium] Sứ cách điện ↔ Cách điện súng hàn.
+- [2026-01-16][TEMPLATE][high] Anh/Chị đang sử dụng súng hệ N hay hệ D để em xác định đúng mã sứ cách điện cho mình ạ?
+- [2026-01-16][RULE][high] Khi khách yêu cầu liệt kê phụ kiện robot, cần yêu cầu thông tin về dòng súng hàn hoặc mã linh kiện cụ thể để lọc danh sách.
+- [2026-01-16][TEMPLATE][high] Vui lòng cung cấp dòng súng hàn Robot đang dùng hoặc mã phụ kiện để hệ thống lọc đúng danh sách linh kiện phù hợp.
+- [2026-01-16][SYN][high] súng hàn ↔ mỏ hàn
+- [2026-01-16][RULE][high] Yêu cầu khách cung cấp mã phụ kiện hoặc hệ súng N/D khi nhận được thông số dòng điện của súng hàn robot.
+- [2026-01-16][TEMPLATE][medium] Anh/Chị cho em xin dòng súng hàn Robot đang dùng hoặc mã phụ kiện để em lọc danh sách phù hợp ạ.
+- [2026-01-16][QA][high] Béc hàn Tokinarc 0.6 x 45L có mã sản phẩm là Tokin 002016 xuất xứ từ Nhật Bản.
+- [2026-01-16][TEMPLATE][high] Anh/Chị có thể cung cấp thêm dòng súng hàn Robot đang dùng để em lọc chính xác các linh kiện đi kèm.
+- [2026-01-16][QA][high] Mã Tokin 002003 là béc hàn (béc tiếp xúc) kích thước 1.2 x 45L, xuất xứ Tokinarc Nhật Bản.
+- [2026-01-16][TEMPLATE][high] Anh/Chị có muốn em liệt kê thêm các linh kiện đi kèm cùng hệ để mình lắp ráp đồng bộ không ạ?
+- [2026-01-16][SYN][high] cái ↔ chiếc
+- [2026-01-16][RULE][high] Khi khách đặt số lượng vượt quá tồn kho, cần yêu cầu thông tin công ty và số điện thoại để xử lý báo giá.
+- [2026-01-16][TEMPLATE][high] Yêu cầu khách hàng cung cấp tên công ty, người liên hệ và số điện thoại Zalo để hỗ trợ báo giá.

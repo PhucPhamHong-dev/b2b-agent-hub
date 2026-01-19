@@ -42,6 +42,8 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from .adk_runtime import AdkAgent, AdkStep
 from .gemini_client import GeminiClient
 from .intent_memory import IntentMemory
+from .knowledge.knowledge_store import KnowledgeStore
+from .knowledge.knowledge_updater import KnowledgeUpdater
 from .prompt_loader import load_prompt
 from .resource_loader import ResourceItem, ResourceLoader, get_raw_value, retrieve_relevant_items
 from .utils import normalize_text, safe_json_loads
@@ -83,6 +85,7 @@ DEFAULT_PRICE_REPLY = (
     "Dạ, Em sẽ ghi nhận nhu cầu và chuyển bộ phận phụ trách phản hồi chi tiết cho Anh/Chị."
 )
 
+# NOTE: Wording for DEFAULT_HAND_NOTE / closing lines / origin is tracked in knowledge_core.md; logic here only controls when to inject.
 ASK_TYPE_QUESTION = "Anh/Chị đang dùng súng hàn tay hay súng hàn robot ạ?"
 DEFAULT_HAND_NOTE = (
     "Dạ, Em đang tư vấn theo bộ phụ kiện cho súng Tay MIG 350A thông dụng, "
@@ -494,6 +497,12 @@ class SalesAssistantAgent:
         self._max_images = max_images
         self._model_flash = model_flash
         self._model_pro = model_pro
+        self._knowledge_store = KnowledgeStore()
+        self._knowledge_updater = KnowledgeUpdater(
+            gemini=self._gemini,
+            resource_loader=self._resource_loader,
+            prompts_dir=self._prompts_dir,
+        )
         self._agent = AdkAgent(
             steps=[
                 AdkStep("pipeline_logs", self._step_pipeline_logs),
@@ -1121,6 +1130,9 @@ class SalesAssistantAgent:
                 target_amp = str(context.intent_entities.get("amp") or "")
             if not target_amp:
                 target_amp = str((context.short_memory.get("last_anchor") or {}).get("line_amp") or "")
+            is_robot_request = False
+            if context.intent_entities.get("is_robot") is True or context.order_state.get("hand_or_robot") == "ROBOT":
+                is_robot_request = True
             mode = "HAND"
             if "robot" in normalized_msg or "robotic" in normalized_msg:
                 mode = "ROBOT"
@@ -1128,21 +1140,36 @@ class SalesAssistantAgent:
                 mode = "HAND"
             elif context.order_state.get("hand_or_robot") in {"ROBOT", "HAND"}:
                 mode = str(context.order_state.get("hand_or_robot"))
-            filtered: List[ResourceItem] = []
-            for item in items:
-                if group:
-                    item_group = detect_product_group(
-                        normalize_text(f"{item.name} {item.description} {item.category}")
-                    )
-                    if item_group != group:
+            if is_robot_request:
+                mode = "ROBOT"
+
+            def _filter_items(candidates: List[ResourceItem], allow_type: bool = True) -> List[ResourceItem]:
+                results: List[ResourceItem] = []
+                for item in candidates:
+                    if group:
+                        item_group = detect_product_group(
+                            normalize_text(f"{item.name} {item.description} {item.category}")
+                        )
+                        if item_group != group:
+                            continue
+                    if target_amp:
+                        amp_val = detect_amp_line(f"{item.name} {item.description}")
+                        if amp_val != target_amp:
+                            continue
+                    if allow_type and mode and detect_item_type(item) != mode:
                         continue
-                if target_amp:
-                    amp_val = detect_amp_line(f"{item.name} {item.description}")
-                    if amp_val != target_amp:
-                        continue
-                if mode and detect_item_type(item) != mode:
-                    continue
-                filtered.append(item)
+                    results.append(item)
+                return results
+
+            filtered: List[ResourceItem] = _filter_items(items)
+            if not filtered and mode == "ROBOT":
+                # Relax type filter if robot query has no matches
+                filtered = _filter_items(items, allow_type=False)
+            if not filtered and not group and mode == "ROBOT":
+                # Try to surface any robot-tagged items when group is unknown
+                robot_only = [item for item in items if detect_item_type(item) == "ROBOT"]
+                filtered = _filter_items(robot_only, allow_type=False)
+
             context.items = filtered[:6]
             matched_codes = [item.code for item in context.items if item.code]
             logger.info(
@@ -1846,6 +1873,15 @@ class SalesAssistantAgent:
             logger.info("session=%s step=generation route=info_query", context.session_id)
             return
 
+        if context.intent_label in {"LIST", "LIST_REQUEST"} and not context.display_items and not context.items:
+            context.answer_text = (
+                "Dạ vâng ạ, Anh/Chị cho em xin dòng súng hàn Robot đang dùng (350A hay 500A, hệ N/D) "
+                "hoặc mã phụ kiện/mã súng để em lọc đúng danh sách linh kiện robot phù hợp ạ."
+            )
+            context.images = []
+            logger.info("session=%s step=generation route=list_need_anchor_robot", context.session_id)
+            return
+
         if context.should_render_products and not context.display_items and context.previous_codes:
             context.answer_text = REPEAT_BLOCK_REPLY
             logger.info("session=%s step=generation route=repeat_block", context.session_id)
@@ -1888,10 +1924,51 @@ class SalesAssistantAgent:
         ]
         user_wants_specs = bool(PRODUCT_INFO_RE.search(normalized_msg) or INFO_RE.search(normalized_msg))
 
+        knowledge_chunks: List[str] = []
+        knowledge_context = ""
+        if os.getenv("KNOWLEDGE_ENABLED", "1") != "0":
+            anchor_hint = ""
+            if base_item:
+                anchor_hint = " ".join(
+                    part for part in [base_item.name or "", base_item.code or ""] if part
+                ).strip()
+            if not anchor_hint:
+                anchor_hint = str(context.order_state.get("selected_sku") or "")
+            required_parts = context.intent_entities.get("required_categories") or []
+            amp_hint = str(context.intent_entities.get("amp") or "")
+            system_hint = str(context.intent_entities.get("system") or "")
+            group_hint = str(context.intent_entities.get("product_group") or "")
+            knowledge_query_text = " | ".join(
+                part
+                for part in [
+                    context.user_message,
+                    context.intent_label,
+                    context.intent_topic,
+                    group_hint,
+                    amp_hint,
+                    system_hint,
+                    anchor_hint,
+                    ",".join(required_parts) if required_parts else "",
+                ]
+                if part
+            )
+            topk = int(os.getenv("KNOWLEDGE_TOPK", "6"))
+            knowledge_chunks = self._knowledge_store.retrieve_topk(knowledge_query_text, topk=topk)
+            if knowledge_chunks:
+                knowledge_context = "KNOWLEDGE CONTEXT:\n" + "\n\n".join(knowledge_chunks)
+            logger.debug(
+                "session=%s step=knowledge_retrieve topk=%s chunks=%s",
+                context.session_id,
+                topk,
+                len(knowledge_chunks),
+            )
+
+        knowledge_block = f"{knowledge_context}\n\n" if knowledge_context else ""
         code_type = detect_code_type(context.user_message, context.primary_code)
         user_prompt = (
             "DỮ LIỆU CỬA HÀNG:\n"
             f"{product_data}\n\n"
+            f"{knowledge_block}"
             f"{base_item_line}\n\n"
             f"{bundle_info}\n\n"
             f"INTENT: {context.intent_label}\n"
@@ -1972,6 +2049,8 @@ class SalesAssistantAgent:
             and not context.is_asking_price
             and context.intent_topic != "commercial"
             and DEFAULT_HAND_NOTE not in answer
+            and (context.order_state.get("hand_or_robot") != "ROBOT")
+            and not context.intent_entities.get("is_robot")
         ):
             answer = f"{answer.strip()}\n\n{DEFAULT_HAND_NOTE}"
 
@@ -2071,6 +2150,12 @@ class SalesAssistantAgent:
             if constraints:
                 state["last_constraints"] = constraints
         context.order_state = state
+        appended_lines = self._knowledge_updater.update(context)
+        logger.debug(
+            "session=%s step=knowledge_update appended_lines=%s",
+            context.session_id,
+            appended_lines,
+        )
         logger.info("session=%s answer=%s", context.session_id, context.answer_text)
         logger.info(
             "session=%s memory_after=%s",

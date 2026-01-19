@@ -10,3 +10,4 @@ All notable changes to this project are documented in this file.
 - Added stock-status line support driven by numeric "Don vi" values.
 - Added richer retrieval logging for bundle queries (query text, filters, top-k).
 - Added product card/image guards to reduce duplicate SKU output and missing images.
+- Added two-file knowledge memory (core/delta) with retrieval and gated append updates.
